@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "description": "HP OMEN fan control methods by board ID (community research)",
+  "boards": [
+    {
+      "board_id": "84DA",
+      "generation": "OMEN 15 2018-2019",
+      "fan_rpm_method": "hp-wmi WMI 0x11",
+      "fan_max_method": "ec_boost",
+      "ec_fan_boost_offset": "0xEC",
+      "ec_fan_boost_on": 1,
+      "ec_fan_boost_off": 0,
+      "pwm1_enable_max_works": false,
+      "tested": false,
+      "notes": "Same generation as 84DB; EC boost assumed but unconfirmed"
+    },
+    {
+      "board_id": "84DB",
+      "generation": "OMEN 15 2018-2019",
+      "product_example": "OMEN by HP Laptop 15-dc0xxx",
+      "fan_rpm_method": "hp-wmi WMI 0x11",
+      "fan_max_method": "ec_boost",
+      "ec_fan_boost_offset": "0xEC",
+      "ec_fan_boost_on": 1,
+      "ec_fan_boost_off": 0,
+      "pwm1_enable_max_works": false,
+      "rpm_auto_idle_hot": { "fan1": 3600, "fan2": 3400 },
+      "rpm_max_boost": { "fan1": 4600, "fan2": 5300 },
+      "tested": true,
+      "tested_by": "community",
+      "tested_date": "2026-07-06",
+      "kernel_tested": "7.0.0-27-generic",
+      "references": [
+        "https://github.com/alou-S/omen-fan",
+        "https://github.com/hirschmann/nbfc/issues/576"
+      ]
+    },
+    {
+      "board_id": "84DC",
+      "generation": "OMEN 15 2018-2019",
+      "fan_rpm_method": "hp-wmi WMI 0x11",
+      "fan_max_method": "ec_boost",
+      "ec_fan_boost_offset": "0xEC",
+      "pwm1_enable_max_works": false,
+      "tested": false
+    }
+  ],
+  "kernel_upstream": {
+    "driver": "drivers/platform/x86/hp/hp-wmi.c",
+    "mailing_list": "platform-driver-x86@vger.kernel.org",
+    "draft_patch": "kernel/0001-hp-wmi-ec-fan-boost-omen-15-draft.patch"
+  }
+}

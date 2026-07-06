@@ -1,0 +1,15 @@
+[Unit]
+Description=HP OMEN fan max (hp-omen-fan-linux)
+After=multi-user.target
+
+[Service]
+Type=simple
+# Adjust path when installing on another system:
+ExecStartPre=/bin/bash -c 'mountpoint -q /sys/kernel/debug || mount -t debugfs none /sys/kernel/debug'
+ExecStartPre=/sbin/modprobe ec_sys write_support=1
+ExecStart=/usr/local/bin/omen-fan-daemon.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

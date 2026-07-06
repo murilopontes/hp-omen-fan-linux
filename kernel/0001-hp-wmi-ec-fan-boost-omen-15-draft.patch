@@ -1,0 +1,103 @@
+From: Murilo Pontes <murilopontes@gmail.com>
+Date: Mon, 6 Jul 2026 12:00:00 +0100
+Subject: [PATCH platform/x86] hp-wmi: Add EC fan boost for legacy OMEN 15 boards
+
+Legacy HP OMEN 15 laptops (board IDs 84DA, 84DB, 84DC) expose fan RPM
+via WMI query 0x11 but HPWMI_FAN_SPEED_MAX_SET_QUERY (0x27) fails when
+users write 0 to pwm1_enable, returning -EINVAL to userspace.
+
+On OMEN 15-dc0xxx (84DB), writing 1 to EC register offset 0xEC forces
+maximum fan speed (~4600/5300 RPM vs ~3600/3400 in auto). This matches
+the BOOST_OFFSET used by the omen-fan community tool.
+
+Add an EC-based fallback for PWM_MODE_MAX and PWM_MODE_AUTO on boards
+in omen_ec_fan_boost_boards[], reusing the driver's existing ec_write().
+
+Tested-on: OMEN by HP Laptop 15-dc0xxx (board 84DB)
+Signed-off-by: Murilo Pontes <murilopontes@gmail.com>
+---
+ drivers/platform/x86/hp/hp-wmi.c | 45 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
+
+diff --git a/drivers/platform/x86/hp/hp-wmi.c b/drivers/platform/x86/hp/hp-wmi.c
+index 0000000..0000001 100644
+--- a/drivers/platform/x86/hp/hp-wmi.c
++++ b/drivers/platform/x86/hp/hp-wmi.c
+@@ -58,6 +58,7 @@ enum hp_ec_offsets {
+ 	HP_OMEN_EC_THERMAL_PROFILE_FLAGS_OFFSET		= 0x62,
+ 	HP_OMEN_EC_THERMAL_PROFILE_TIMER_OFFSET		= 0x63,
+ 	HP_OMEN_EC_THERMAL_PROFILE_OFFSET		= 0x95,
++	HP_OMEN_EC_FAN_BOOST_OFFSET			= 0xEC,
+ };
+ 
+ #define HP_FAN_SPEED_AUTOMATIC	 0x00
+@@ -169,6 +170,18 @@ static const char * const omen_timed_thermal_profile_boards[] = {
+ 	"8BAD",
+ };
+ 
++/*
++ * OMEN 15 (2018-2019): fan max via WMI 0x27 fails; EC boost at 0xEC works.
++ * See: https://github.com/alou-S/omen-fan (BOOST_OFFSET 236)
++ */
++static const char * const omen_ec_fan_boost_boards[] = {
++	"84DA",
++	"84DB",
++	"84DC",
++	NULL
++};
++
+ static bool is_victus_s_board;
+ 
+ static int hp_wmi_get_fan_count_userdefine_trigger(void)
+@@ -176,6 +189,22 @@ static int hp_wmi_get_fan_count_userdefine_trigger(void)
+ 	return hp_wmi_perform_query(HPWMI_FAN_COUNT_GET_QUERY, HPWMI_GM, NULL, 0, 0);
+ }
+ 
++static bool omen_uses_ec_fan_boost(void)
++{
++	const char *board = dmi_get_system_info(DMI_BOARD_NAME);
++
++	if (!board)
++		return false;
++
++	return match_string(omen_ec_fan_boost_boards, -1, board) >= 0;
++}
++
++static int omen_ec_fan_boost_set(bool enabled)
++{
++	return ec_write(HP_OMEN_EC_FAN_BOOST_OFFSET, enabled ? 1 : 0);
++}
++
+ static int hp_wmi_fan_speed_max_set(int enabled)
+ {
+ 	int ret;
+@@ -2354,6 +2383,14 @@ static int hp_wmi_apply_fan_settings(struct hp_wmi_hwmon_priv *priv)
+ 	switch (priv->mode) {
+ 	case PWM_MODE_MAX:
++		if (omen_uses_ec_fan_boost()) {
++			ret = omen_ec_fan_boost_set(true);
++			if (ret < 0)
++				return ret;
++			schedule_delayed_work(&priv->keep_alive_dwork,
++					      secs_to_jiffies(KEEP_ALIVE_DELAY_SECS));
++			return 0;
++		}
+ 		if (is_victus_s_thermal_profile())
+ 			hp_wmi_get_fan_count_userdefine_trigger();
+ 		ret = hp_wmi_fan_speed_max_set(1);
+@@ -2375,6 +2412,14 @@ static int hp_wmi_apply_fan_settings(struct hp_wmi_hwmon_priv *priv)
+ 				      secs_to_jiffies(KEEP_ALIVE_DELAY_SECS));
+ 		return 0;
+ 	case PWM_MODE_AUTO:
++		if (omen_uses_ec_fan_boost()) {
++			ret = omen_ec_fan_boost_set(false);
++			if (ret < 0)
++				return ret;
++			cancel_delayed_work_sync(&priv->keep_alive_dwork);
++			return 0;
++		}
+ 		if (is_victus_s_thermal_profile()) {
+ 			hp_wmi_get_fan_count_userdefine_trigger();
+ 			ret = hp_wmi_fan_speed_max_reset(priv);
+-- 
+2.43.0
