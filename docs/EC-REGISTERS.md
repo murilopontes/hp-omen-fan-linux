@@ -3,16 +3,36 @@
 Offsets validated or referenced by the community. **Model-specific** — do not
 assume they work on all OMEN laptops without testing.
 
+See [WHAT-WORKS.md](WHAT-WORKS.md) for a full compatibility matrix and
+[data/register-map-84DB.json](../data/register-map-84DB.json) for machine-readable
+register → RPM data.
+
 ## Primary registers (board 84DB)
 
-| Offset (dec) | Offset (hex) | Name | R/W | Observed effect |
-|--------------|--------------|------|-----|-----------------|
-| 52 | 0x34 | FAN1_SPEED | rw | No isolated effect on 84DB |
-| 53 | 0x35 | FAN2_SPEED | rw | No isolated effect on 84DB |
-| 98 | 0x62 | BIOS_FLAGS | rw | Disable BIOS control (`6`) — [omen-fan](https://github.com/alou-S/omen-fan) |
-| 99 | 0x63 | BIOS_TIMER | rw | Thermal profile timer |
-| 236 | **0xEC** | **FAN_BOOST** | rw | **1 = fans at maximum** |
-| 88 | 0x58 | FAN_PERCENT? | rw | No clear effect on 84DB |
+| Offset (dec) | Offset (hex) | Name | R/W | Works? | Observed effect |
+|--------------|--------------|------|-----|--------|-----------------|
+| 52 | 0x34 | FAN1_SPEED | rw | **No** | Write persists; no RPM change |
+| 53 | 0x35 | FAN2_SPEED | rw | **No** | Write persists; no RPM change |
+| 88 | 0x58 | FAN_PERCENT? | rw | **No** | Reflective state (~63–73 in auto); not a setter |
+| 98 | 0x62 | BIOS_FLAGS | rw | Partial | `0` = normal; `6` = disable BIOS on other models |
+| 99 | 0x63 | BIOS_TIMER | rw | Kernel | Thermal profile timer (hp-wmi) |
+| 149 | 0x95 | THERMAL_PROFILE | rw | Kernel | Platform profile (hp-wmi) |
+| 236 | **0xEC** | **FAN_BOOST** | rw | **Yes** | `0` = auto, `1` = max; **avoid `2`/`3`** |
+
+## Register value → fan RPM (0xEC only)
+
+Tested on board 84DB with CPU under load (`stress-ng`, package ~88°C).
+Auto RPM also varies with temperature at idle.
+
+| Write `0xEC` | Read-back | Mode | fan1 RPM | fan2 RPM | Safe? |
+|--------------|-----------|------|----------|----------|-------|
+| `0` | `0` | Auto (BIOS) | ~3600 | ~3400 | Yes |
+| `1` | `3` | Maximum boost | ~4600 | ~5300 | Yes |
+| `2` | `0` | Reduced speed | ~3000 | ~2800 | **No** |
+| `3` | `3` | Reduced speed | ~3000 | ~2800 | **No** |
+
+There is **no granular speed control** — offsets `0x34`, `0x35`, and `0x58` do
+not provide a usable register-to-RPM curve on 84DB.
 
 ### Kernel upstream (hp-wmi) — what already exists
 

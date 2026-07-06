@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "board_id": "84DB",
+  "product": "OMEN by HP Laptop 15-dc0xxx",
+  "bios": "F.19",
+  "kernel_tested": "7.0.0-27-generic",
+  "tested_date": "2026-07-06",
+  "notes": "RPM values measured with CPU under load (stress-ng, package ~88°C). Auto RPM varies with temperature.",
+  "registers": [
+    {
+      "offset_hex": "0xEC",
+      "offset_dec": 236,
+      "name": "FAN_BOOST",
+      "works": true,
+      "control_type": "binary_boost",
+      "values": [
+        {
+          "write": 0,
+          "read_back": 0,
+          "mode": "auto",
+          "fan1_rpm": 3600,
+          "fan2_rpm": 3400,
+          "safe": true
+        },
+        {
+          "write": 1,
+          "read_back": 3,
+          "mode": "max_boost",
+          "fan1_rpm": 4600,
+          "fan2_rpm": 5300,
+          "safe": true,
+          "notes": "EC rewrites 1 to 3 on read-back; this is expected"
+        },
+        {
+          "write": 2,
+          "read_back": 0,
+          "mode": "reduced",
+          "fan1_rpm": 3000,
+          "fan2_rpm": 2800,
+          "safe": false,
+          "warning": "Lowers fan speed below BIOS curve — do not use"
+        },
+        {
+          "write": 3,
+          "read_back": 3,
+          "mode": "reduced",
+          "fan1_rpm": 3000,
+          "fan2_rpm": 2800,
+          "safe": false,
+          "warning": "Lowers fan speed below BIOS curve — do not use"
+        }
+      ]
+    },
+    {
+      "offset_hex": "0x34",
+      "offset_dec": 52,
+      "name": "FAN1_SPEED",
+      "works": false,
+      "control_type": "none",
+      "values_tested": "0-255",
+      "effect": "Write persists in EC RAM but no consistent RPM change"
+    },
+    {
+      "offset_hex": "0x35",
+      "offset_dec": 53,
+      "name": "FAN2_SPEED",
+      "works": false,
+      "control_type": "none",
+      "values_tested": "0-255",
+      "effect": "Write persists in EC RAM but no consistent RPM change"
+    },
+    {
+      "offset_hex": "0x58",
+      "offset_dec": 88,
+      "name": "FAN_PERCENT",
+      "works": false,
+      "control_type": "reflective",
+      "values_tested": "0-255",
+      "effect": "Appears to reflect internal state (~63-73 in auto); not a reliable speed setter"
+    },
+    {
+      "offset_hex": "0x62",
+      "offset_dec": 98,
+      "name": "BIOS_FLAGS",
+      "works": "partial",
+      "control_type": "flags",
+      "values": [
+        {
+          "write": 0,
+          "effect": "Normal — used in restore sequence",
+          "safe": true
+        },
+        {
+          "write": 6,
+          "effect": "Disable BIOS control on other models (omen-fan); not required on 84DB",
+          "safe": "unknown"
+        }
+      ]
+    },
+    {
+      "offset_hex": "0x63",
+      "offset_dec": 99,
+      "name": "BIOS_TIMER",
+      "works": false,
+      "control_type": "kernel_only",
+      "effect": "Thermal profile timer — managed by hp-wmi kernel driver"
+    },
+    {
+      "offset_hex": "0x95",
+      "offset_dec": 149,
+      "name": "THERMAL_PROFILE",
+      "works": false,
+      "control_type": "kernel_only",
+      "effect": "Platform profile — managed by hp-wmi kernel driver"
+    }
+  ],
+  "rpm_read_method": {
+    "works": true,
+    "driver": "hp-wmi",
+    "wmi_query": "0x11",
+    "sysfs": "/sys/devices/platform/hp-wmi/hwmon/hwmonN/fan{1,2}_input",
+    "sensors": "hp-isa-0000"
+  },
+  "kernel_interfaces": {
+    "pwm1_enable_max": {
+      "works": false,
+      "error": "EINVAL",
+      "wmi_query": "0x27"
+    },
+    "pwm1_manual": {
+      "works": false,
+      "error": "EOPNOTSUPP",
+      "reason": "pwm1 attribute not exposed"
+    },
+    "platform_profile": {
+      "works": false,
+      "reason": "May be absent on this BIOS version"
+    }
+  }
+}

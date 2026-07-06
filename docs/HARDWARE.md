@@ -33,9 +33,14 @@ These IDs are already listed in `omen_thermal_profile_boards[]` in the kernel:
 
 ## What does NOT work on this model
 
+See [WHAT-WORKS.md](WHAT-WORKS.md) for the full matrix. Summary:
+
 - **NBFC** — confirmed incompatible ([issue #576](https://github.com/hirschmann/nbfc/issues/576))
 - **fancontrol / pwmconfig** — no writable PWM sysfs
 - **omen-fan** (alou-S) — targets OMEN 16 only; EC offsets partially applicable
+- **EC `0x34` / `0x35`** — per-fan speed writes have no effect on 84DB
+- **EC `0x58`** — not a reliable fan percent control
+- **EC `0xEC` values `2` / `3`** — reduce fan speed (unsafe)
 
 ## HP OMEN generations on Linux (summary)
 

@@ -26,6 +26,14 @@
       "pwm1_enable_max_works": false,
       "rpm_auto_idle_hot": { "fan1": 3600, "fan2": 3400 },
       "rpm_max_boost": { "fan1": 4600, "fan2": 5300 },
+      "register_control": {
+        "0xEC": { "works": true, "safe_values": [0, 1], "unsafe_values": [2, 3] },
+        "0x34": { "works": false },
+        "0x35": { "works": false },
+        "0x58": { "works": false, "notes": "reflective state only" }
+      },
+      "register_map": "data/register-map-84DB.json",
+      "compatibility_doc": "docs/WHAT-WORKS.md",
       "tested": true,
       "tested_by": "community",
       "tested_date": "2026-07-06",

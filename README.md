@@ -24,6 +24,7 @@ hp-omen-fan-linux/
 ├── CONTRIBUTING.md
 ├── docs/
 │   ├── HARDWARE.md           # models and known board IDs
+│   ├── WHAT-WORKS.md         # what works / does not work (84DB)
 │   ├── EC-REGISTERS.md       # EC register map
 │   ├── TEST-RESULTS.md       # test results (84DB)
 │   └── KERNEL-UPSTREAM.md    # kernel submission guide
@@ -37,6 +38,7 @@ hp-omen-fan-linux/
 │   └── 0001-hp-wmi-ec-fan-boost-omen-15-draft.patch
 ├── data/
 │   ├── boards.json           # board IDs and control methods
+│   ├── register-map-84DB.json # register → RPM mapping (84DB)
 │   └── evidence-84DB.txt     # evidence from reference hardware
 └── examples/
     ├── omen-fan-max.service  # example systemd unit
@@ -49,6 +51,9 @@ hp-omen-fan-linux/
 |------|------|------|
 | Auto (BIOS) | ~3600 RPM | ~3400 RPM |
 | EC boost (`0xEC=1`) | ~4600 RPM | ~5300 RPM |
+
+See [docs/WHAT-WORKS.md](docs/WHAT-WORKS.md) for the full compatibility matrix
+(what works, what does not, and unsafe register values).
 
 ## Contributing
 

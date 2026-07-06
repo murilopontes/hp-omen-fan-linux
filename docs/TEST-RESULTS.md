@@ -2,7 +2,7 @@
 
 Machine: **OMEN by HP Laptop 15-dc0xxx**, BIOS F.19, kernel 7.0.0-27-generic.
 
-Initial test date: 2026-07-06.
+Initial test date: 2026-07-06. Register sweep added same day.
 
 ## Summary
 
@@ -11,8 +11,11 @@ Initial test date: 2026-07-06.
 | `sensors hp-isa-0000` | fan1/fan2 readable |
 | `echo 0 > pwm1_enable` | EINVAL (driver WMI max fails) |
 | `echo 1 > pwm1_enable` | EOPNOTSUPP (no manual pwm1) |
-| `EC 0xEC = 1` | RPM rises ~3600→4600 / ~3400→5300 |
+| `EC 0xEC = 1` | RPM rises ~3600→4600 / ~3400→5300 (with CPU load) |
 | `EC 0xEC = 0` | Restores BIOS control (may lag if CPU is hot) |
+| `EC 0xEC = 2` or `3` | **Dangerous** — RPM drops to ~3000/2800 |
+| `EC 0x34` / `0x35` (0–255) | No RPM change |
+| `EC 0x58` (0–255) | No reliable speed control |
 | stress-ng 15s in auto | RPM stable ~3600 (BIOS already aggressive when hot) |
 
 ## Measured RPM
@@ -38,6 +41,34 @@ Package id 0: +76°C
 GPU: 81°C
 NVMe Composite: +52°C
 ```
+
+### Register sweep (0xEC, 0x34, 0x35, 0x58)
+
+Full sweep with `stress-ng` confirmation. See [WHAT-WORKS.md](WHAT-WORKS.md).
+
+#### `0xEC` with CPU load (stress-ng, package ~88°C)
+
+| Write | Read-back | fan1 | fan2 |
+|-------|-----------|------|------|
+| 0 | 0 | 3599 | 3374 |
+| 1 | 3 | 4607 | 5310 |
+| 2 | 0 | 3024 | 2807 |
+| 3 | 3 | 2986 | 2778 |
+
+#### `0x34` / `0x35` (values 0, 50, 100, 128, 200, 255)
+
+No consistent RPM change. Values persist in EC RAM but fans follow BIOS curve.
+
+#### `0x58` (values 0–120)
+
+| Write | Read-back | fan1 | fan2 | Notes |
+|-------|-----------|------|------|-------|
+| auto | 63 | 3978 | 4000 | Baseline after cooldown |
+| 0–70 | 63–67 | ~4000 | ~4000 | No effect |
+| 80–120 | 68–75 | ~4400 | ~4200 | Follows thermal load, not write value |
+
+One isolated run with `0x58=100` briefly reached 4607/5208 but was not
+reproducible as stable control.
 
 ## Commands used
 
